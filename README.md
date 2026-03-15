@@ -16,4 +16,4 @@ HAL_RNG_GenerateRandomNumber(&hrng, &randNum);
 
 ## API Reference
 
-The API reference manual for the exposed C to C++ API can be found at this link: https://wpi-ece2049-reimagined-mqp.github.io/ECE2049-STM32-Adafruit-Graphics-Library/, which is updated with every update to the graphics library.
+The API reference manual for display functions can be found at this link: https://wpi-ece2049-reimagined-mqp.github.io/ECE2049-STM32-Adafruit-Graphics-Library/files.html, which is updated with every update to the graphics library repository. Two different systems, and therefore APIs, are described in this documentation. Graphics functions are described in the Adafruit_ST7735_API.h file while button and backlight functions are described in the Adafruit_TFTShield18_API.h file.
