@@ -373,6 +373,7 @@ void Display_drawXBitmap(int16_t x, int16_t y, uint8_t *bitmap, int16_t w, int16
  * @param w Width of the bitmap
  * @param h Height of the bitmap
  * @param color Color to draw the bitmap
+ * @param bg Background color of the bitmap
  */
 void Display_drawXBitmapBg(int16_t x, int16_t y, uint8_t *bitmap, int16_t w, int16_t h, uint16_t color, uint16_t bg);
 
