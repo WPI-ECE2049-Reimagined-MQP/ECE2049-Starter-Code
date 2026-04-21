@@ -2,7 +2,7 @@
 #include "stdint.h"
 
 #define NOTE_A 440
-#define NOTE_A_SHARP 466
+#define NOTE_A_SHARP 474
 #define NOTE_B_FLAT NOTE_A_SHARP
 #define NOTE_B 494
 #define NOTE_C 523
