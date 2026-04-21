@@ -22,11 +22,15 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+#include "Adafruit_ST7735_Macros.h"
 #include "Adafruit_TFTShield18_Macros.h"
 #include "dwt_module.h"
 #include "Adafruit_TFTShield18_API.h"
 #include "Adafruit_ST7735_API.h"
-#include "stm32h5xx_hal_rng.h"
+#include "stm32h5xx_hal.h"
+
+#include "buzzer.h"
+#include "stm32h5xx_hal_tim.h"
 
 /* USER CODE END Includes */
 
@@ -58,7 +62,16 @@ RNG_HandleTypeDef hrng;
 SPI_HandleTypeDef hspi2;
 DMA_HandleTypeDef handle_GPDMA1_Channel7;
 
+TIM_HandleTypeDef htim1;
+
 /* USER CODE BEGIN PV */
+
+Buzzer const buzzer1 = {
+  &htim1,
+  TIM_CHANNEL_1
+};
+
+extern Note const chromaticScale[NUM_NOTES];
 
 /* USER CODE END PV */
 
@@ -71,6 +84,7 @@ static void MX_I2C1_Init(void);
 static void MX_ICACHE_Init(void);
 static void MX_SPI2_Init(void);
 static void MX_RNG_Init(void);
+static void MX_TIM1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -117,6 +131,7 @@ int main(void)
   MX_ICACHE_Init();
   MX_SPI2_Init();
   MX_RNG_Init();
+  MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -175,9 +190,54 @@ int main(void)
 
   /* Place extra user setup code here */
 
+  Display_setTextSize(1, 1);
+  Display_setTextColor(ST7735_BLACK);
+  Display_setCursor(Display_width() / 2 - 58, Display_height() / 2 - 5);
+  Display_print("Welcome to ECE 2049!");
+
+  int32_t currNoteNum = 0;
+  int32_t currOctave = 1;
+
+  buzzerSetNote(&buzzer1, chromaticScale[currNoteNum], currOctave);
+  buzzerEnable(&buzzer1);
+
+  uint32_t lastButtonState = TFTSHIELD_BUTTON_ALL;
+
   while (1)
   {
     /* Place application loop code here */
+
+    uint32_t buttons = TFTShield18_readButtons();
+
+    if(lastButtonState != buttons) {
+      if(!(buttons & TFTSHIELD_BUTTON_1)) {
+        buzzerEnable(&buzzer1);
+      } else if(!(buttons & TFTSHIELD_BUTTON_2)) {
+        buzzerDisable(&buzzer1);
+      } else if(!(buttons & TFTSHIELD_BUTTON_UP)) {
+        currNoteNum++;
+        if (currNoteNum >= NUM_NOTES) {
+          currNoteNum %= NUM_NOTES;
+          currOctave++;
+        }
+
+        printf("Current Note Num: %d, Current Octave: %d\n", currNoteNum, currOctave);
+
+        buzzerSetNote(&buzzer1, chromaticScale[currNoteNum], currOctave);
+      } else if (!(buttons & TFTSHIELD_BUTTON_DOWN)) {
+        currNoteNum--;
+        if (currNoteNum < 0) {
+          currNoteNum = NUM_NOTES + currNoteNum;
+          currOctave--;
+        }
+
+        printf("Current Note Num: %d, Current Octave: %d\n", currNoteNum, currOctave);
+
+        buzzerSetNote(&buzzer1, chromaticScale[currNoteNum], currOctave);
+      }
+    }
+
+    lastButtonState = buttons;
 
     /* USER CODE END WHILE */
 
@@ -428,6 +488,78 @@ static void MX_SPI2_Init(void)
   /* USER CODE BEGIN SPI2_Init 2 */
 
   /* USER CODE END SPI2_Init 2 */
+
+}
+
+/**
+  * @brief TIM1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM1_Init(void)
+{
+
+  /* USER CODE BEGIN TIM1_Init 0 */
+
+  /* USER CODE END TIM1_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+  TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig = {0};
+
+  /* USER CODE BEGIN TIM1_Init 1 */
+
+  /* USER CODE END TIM1_Init 1 */
+  htim1.Instance = TIM1;
+  htim1.Init.Prescaler = 0;
+  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim1.Init.Period = 1000;
+  htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim1.Init.RepetitionCounter = 0;
+  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_PWM_Init(&htim1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterOutputTrigger2 = TIM_TRGO2_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 500;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
+  sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
+  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
+  sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
+  sBreakDeadTimeConfig.LockLevel = TIM_LOCKLEVEL_OFF;
+  sBreakDeadTimeConfig.DeadTime = 0;
+  sBreakDeadTimeConfig.BreakState = TIM_BREAK_DISABLE;
+  sBreakDeadTimeConfig.BreakPolarity = TIM_BREAKPOLARITY_HIGH;
+  sBreakDeadTimeConfig.BreakFilter = 0;
+  sBreakDeadTimeConfig.BreakAFMode = TIM_BREAK_AFMODE_INPUT;
+  sBreakDeadTimeConfig.Break2State = TIM_BREAK2_DISABLE;
+  sBreakDeadTimeConfig.Break2Polarity = TIM_BREAK2POLARITY_HIGH;
+  sBreakDeadTimeConfig.Break2Filter = 0;
+  sBreakDeadTimeConfig.Break2AFMode = TIM_BREAK_AFMODE_INPUT;
+  sBreakDeadTimeConfig.AutomaticOutput = TIM_AUTOMATICOUTPUT_DISABLE;
+  if (HAL_TIMEx_ConfigBreakDeadTime(&htim1, &sBreakDeadTimeConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM1_Init 2 */
+
+  /* USER CODE END TIM1_Init 2 */
+  HAL_TIM_MspPostInit(&htim1);
 
 }
 
