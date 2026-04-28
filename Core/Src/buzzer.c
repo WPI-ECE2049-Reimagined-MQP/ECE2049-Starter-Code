@@ -1,15 +1,18 @@
 #include "buzzer.h"
 #include "stm32h5xx_hal.h"
 #include "stm32h5xx_hal_tim.h"
+#include "stdbool.h"
 
 Note const chromaticScale[NUM_NOTES] = {NOTE_A, NOTE_A_SHARP, NOTE_B, NOTE_C, NOTE_C_SHARP, NOTE_D, NOTE_D_SHARP, NOTE_E, NOTE_F, NOTE_F_SHARP, NOTE_G, NOTE_G_SHARP};
 
-void buzzerEnable(Buzzer const *buzzer) {
+void buzzerEnable(Buzzer * const buzzer) {
     HAL_TIM_PWM_Start(buzzer->buzzerTimerHandle, buzzer->buzzerChannel);
+    buzzer->currBuzzerState = true;
 }
 
-void buzzerDisable(Buzzer const *buzzer) {
+void buzzerDisable(Buzzer * const buzzer) {
     HAL_TIM_PWM_Stop(buzzer->buzzerTimerHandle, buzzer->buzzerChannel);
+    buzzer->currBuzzerState = false;
 }
 
 void buzzerSetNote(Buzzer const *buzzer, Note note, int32_t octave) {

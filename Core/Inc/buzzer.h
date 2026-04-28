@@ -1,5 +1,6 @@
 #include "stm32h5xx_hal.h"
 #include "stdint.h"
+#include "stdbool.h"
 
 #define NOTE_A 440
 #define NOTE_A_SHARP 474
@@ -29,10 +30,11 @@ typedef uint32_t Note;
 typedef struct _buzzer {
     TIM_HandleTypeDef *buzzerTimerHandle;
     uint32_t buzzerChannel;
+    bool currBuzzerState;
 } Buzzer;
 
-void buzzerEnable(Buzzer const *buzzer);
-void buzzerDisable(Buzzer const *buzzer);
+void buzzerEnable(Buzzer * const buzzer);
+void buzzerDisable(Buzzer * const buzzer);
 
 void buzzerSetNote(Buzzer const *buzzer, Note note, int32_t octave);
 

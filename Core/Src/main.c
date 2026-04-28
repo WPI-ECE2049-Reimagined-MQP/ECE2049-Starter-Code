@@ -66,9 +66,10 @@ TIM_HandleTypeDef htim1;
 
 /* USER CODE BEGIN PV */
 
-Buzzer const buzzer1 = {
+Buzzer buzzer1 = {
   &htim1,
-  TIM_CHANNEL_1
+  TIM_CHANNEL_1,
+  false
 };
 
 extern Note const chromaticScale[NUM_NOTES];
@@ -199,7 +200,7 @@ int main(void)
   int32_t currOctave = 1;
 
   buzzerSetNote(&buzzer1, chromaticScale[currNoteNum], currOctave);
-  buzzerEnable(&buzzer1);
+  buzzerDisable(&buzzer1);
 
   uint32_t lastButtonState = TFTSHIELD_BUTTON_ALL;
 
@@ -211,9 +212,8 @@ int main(void)
 
     if(lastButtonState != buttons) {
       if(!(buttons & TFTSHIELD_BUTTON_1)) {
-        buzzerEnable(&buzzer1);
-      } else if(!(buttons & TFTSHIELD_BUTTON_2)) {
-        buzzerDisable(&buzzer1);
+        if(buzzer1.currBuzzerState) buzzerDisable(&buzzer1);
+        else buzzerEnable(&buzzer1);
       } else if(!(buttons & TFTSHIELD_BUTTON_UP)) {
         currNoteNum++;
         if (currNoteNum >= NUM_NOTES) {
